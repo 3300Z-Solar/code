@@ -3,6 +3,8 @@
 #include "lemlib/chassis/trackingWheel.hpp"
 #include "pros/misc.h"
 
+using pros::delay;
+
 // controller 
 pros::Controller controller(pros::E_CONTROLLER_MASTER);
 
@@ -12,7 +14,7 @@ pros::MotorGroup rightMotors({9, -6}, pros::MotorGearset::blue); // right motor 
 pros::MotorGroup liftMotors({-1, 10}, pros::MotorGearset::blue); // right motor group - ports 6, 7, 9 (reversed)
 pros::MotorGroup intake({8}, pros::MotorGearset::blue); // right motor group - ports 6, 7, 9 (reversed)
 
-pros::MotorGroup roller({11}, pros::MotorGearset::blue); // right motor group - ports 6, 7, 9 (reversed)
+pros::MotorGroup roller({-11}, pros::MotorGearset::blue); // right motor group - ports 6, 7, 9 (reversed)
 pros::MotorGroup arm({20}, pros::MotorGearset::blue); // right motor group - ports 6, 7, 9 (reversed)
 
 pros::Imu imu(3);
@@ -94,7 +96,7 @@ void initialize() {
     pros::lcd::initialize(); // initialize brain screen
     chassis.calibrate(); // calibrate sensors
     // ClawMotors.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
-    armMotors.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
+    arm.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
 
 
     // the default rate is 4000. however, if you need to change the rate, you
@@ -115,7 +117,7 @@ void initialize() {
             // log position telemetry
             lemlib::telemetrySink()->info("Chassis pose: {}", chassis.getPose());
             // delay to save resources
-            pros::delay(4000);
+            delay(4000);
         }
     });
 }
@@ -132,7 +134,7 @@ void competition_initialize() {}
 
 // get a path used for pure pursuit
 // this needs to be put outside a function
-ASSET(example_txt); // '.' replaced with "_" to make c++ happy
+ASSET(path_txt); // '.' replaced with "_" to make c++ happy
 
 /**
  * Runs during auto
@@ -150,53 +152,48 @@ void autonomous() {
  * Runs in driver control
  */
 void opcontrol() {
-    // controller
-    // loop to continuously update motors
+    // mechanisms run on their own task so their blocking delays (e.g. the arm
+    // pulse below) never stall the drivetrain loop
+    pros::Task mechanismTask([]() {
+        while (true) {
+            if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_L1)){
+                intake.move_voltage(12000);
+                roller.move_voltage(12000);
+                arm.move_voltage(4000);
+                arm.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
+                delay(257);
+                arm.brake();
+            } else if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_L2)){
+                intake.move_voltage(-12000);
+                roller.move_voltage(-12000);
+            } else {
+                intake.move_voltage(0);
+                roller.move_voltage(0);
+            }
+
+            if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_R1)){
+                liftMotors.move_voltage(12000);
+                roller.move_voltage(12000);
+                arm.move_voltage(-10000);
+                arm.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
+                delay(257);
+                arm.brake();
+            } else if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_R2)) {
+                liftMotors.move_voltage(-12000);
+            } else {
+                liftMotors.move_voltage(0);
+                arm.move_voltage(0);
+            }
+
+            delay(10);
+        }
+    });
+
+    // drivetrain loop — runs independently at a steady 10ms cadence
     while (true) {
-        // get joystick positions
         int leftY = controller.get_analog(pros::E_CONTROLLER_ANALOG_LEFT_Y);
         int rightX = controller.get_analog(pros::E_CONTROLLER_ANALOG_RIGHT_X);
-        bool dpadLeft = controller.get_digital(pros::E_CONTROLLER_DIGITAL_LEFT);
-        bool dpadRight = controller.get_digital(pros::E_CONTROLLER_DIGITAL_RIGHT);
-        // move the chassis with curvature drive
         chassis.arcade(leftY, rightX);
-        // delay to save resources
-        pros::delay(10);
-
-
-        if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_L1)){
-			intakeMotors.move_voltage(12000);
-		} else if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_L2)){
-			intakeMotors.move_voltage(-12000);
-		} else {
-			intakeMotors.move_voltage(0);
-		}
-
-        if (dpadLeft && dpadRight) {
-            autonomous();
-        }
-
-        if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_R1)){
-            liftMotors.move(127);
-        } else if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_R2)) {
-            liftMotors.move(-127);
-        } else {
-            liftMotors.move(0);
-        }
-
-        if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_A)){
-            clawMotors.move(127);
-        } else if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_B)) {
-            armMotors.move(127);
-        } else if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_X)) {
-            clawMotors.move(-127);
-        } else if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_Y)) {
-            armMotors.move(-127);
-        } else {
-            armMotors.move(0);
-            clawMotors.move(0);
-            armMotors.brake();
-        }
-        pros::delay(10);
+        delay(10);
     }
 }

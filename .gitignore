@@ -1,28 +1,17 @@
-*
+# Compiled Object files
+*.o
+*.obj
 
-!.gitignore
+# Executables
+*.bin
+*.elf
 
-!firmware/
-!firmware/**/
-!include/
-!include/**/
-!src/
-!src/**/
-!static/
-!static/**/
-
-!README.md
-!Makefile
-!common.mk
-!project.pros
-
-!*.a
-!*.cpp
-!*.h
-!*.hpp
-!*.ld
-!*.mk
-!*.png
-!*.txt
-
-!include/fmt/LICENSE
+# PROS
+bin/
+.vscode/
+.cache/
+compile_commands.json
+temp.log
+temp.errors
+*.ini
+.d/
