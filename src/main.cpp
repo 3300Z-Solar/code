@@ -10,10 +10,10 @@ pros::Controller controller(pros::E_CONTROLLER_MASTER);
 pros::MotorGroup leftMotors({-2, 4}, pros::MotorGearset::blue); // left motor group - ports 3 (reversed), 4, 5 (reversed)
 pros::MotorGroup rightMotors({9, -6}, pros::MotorGearset::blue); // right motor group - ports 6, 7, 9 (reversed)
 pros::MotorGroup liftMotors({-1, 10}, pros::MotorGearset::blue); // right motor group - ports 6, 7, 9 (reversed)
-pros::MotorGroup intakeMotors({8}, pros::MotorGearset::blue); // right motor group - ports 6, 7, 9 (reversed)
+pros::MotorGroup intake({8}, pros::MotorGearset::blue); // right motor group - ports 6, 7, 9 (reversed)
 
-pros::MotorGroup clawMotors({11}, pros::MotorGearset::blue); // right motor group - ports 6, 7, 9 (reversed)
-pros::MotorGroup armMotors({20}, pros::MotorGearset::blue); // right motor group - ports 6, 7, 9 (reversed)
+pros::MotorGroup roller({11}, pros::MotorGearset::blue); // right motor group - ports 6, 7, 9 (reversed)
+pros::MotorGroup arm({20}, pros::MotorGearset::blue); // right motor group - ports 6, 7, 9 (reversed)
 
 pros::Imu imu(3);
 
