@@ -17,6 +17,8 @@ pros::MotorGroup intake({8}, pros::MotorGearset::blue); // right motor group - p
 pros::MotorGroup roller({-11}, pros::MotorGearset::blue); // right motor group - ports 6, 7, 9 (reversed)
 pros::MotorGroup arm({20}, pros::MotorGearset::blue); // right motor group - ports 6, 7, 9 (reversed)
 
+const int ARM_CURRENT_LIMIT_MA = 2000; // TODO: tune this
+
 pros::Imu imu(3);
 
 // tracking wheels
@@ -156,35 +158,63 @@ void opcontrol() {
     // pulse below) never stall the drivetrain loop
     pros::Task mechanismTask([]() {
         while (true) {
+            //intaking first stage and rollers
             if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_L1)){
                 intake.move_voltage(12000);
                 roller.move_voltage(12000);
                 arm.move_voltage(4000);
                 arm.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
-                delay(257);
+                uint32_t armPulseStart = pros::millis();
+                while (pros::millis() - armPulseStart < 257) {
+                    if (arm.get_current_draw() > ARM_CURRENT_LIMIT_MA) break;
+                    pros::delay(10);
+                }
                 arm.brake();
+            //outtaking first stage and rollers
             } else if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_L2)){
                 intake.move_voltage(-12000);
                 roller.move_voltage(-12000);
+                arm.move_voltage(-4000);
+                arm.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
+                uint32_t armPulseStart = pros::millis();
+                while (pros::millis() - armPulseStart < 257) {
+                    if (arm.get_current_draw() > ARM_CURRENT_LIMIT_MA) break;
+                    pros::delay(10);
+                }
+                arm.brake();
+            //otherwise stop intake and rollers
             } else {
                 intake.move_voltage(0);
                 roller.move_voltage(0);
             }
 
+            //cascade bringing objects up
             if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_R1)){
                 liftMotors.move_voltage(12000);
-                roller.move_voltage(12000);
+                roller.move_voltage(9000);
                 arm.move_voltage(-10000);
                 arm.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
-                delay(257);
+                uint32_t armPulseStart = pros::millis();
+                while (pros::millis() - armPulseStart < 257) {
+                    if (arm.get_current_draw() > ARM_CURRENT_LIMIT_MA) break;
+                    pros::delay(10);
+                }
                 arm.brake();
             } else if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_R2)) {
                 liftMotors.move_voltage(-12000);
-            } else {
-                liftMotors.move_voltage(0);
-                arm.move_voltage(0);
             }
 
+            //scoring by bringing objects down from the cascade
+            if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_Y)){
+                roller.move_voltage(-7000);
+                liftMotors.move_voltage(1500);
+                arm.move_voltage(4000);
+                arm.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
+                delay(257);
+                arm.brake();
+                arm.move_voltage(0);
+                liftMotors.move_voltage(0);
+            }
             delay(10);
         }
     });
