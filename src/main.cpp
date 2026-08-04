@@ -2,10 +2,12 @@
 #include "lemlib/api.hpp" // IWYU pragma: keep
 #include "lemlib/chassis/trackingWheel.hpp"
 #include "pros/misc.h"
+#include "autons.hpp"
+#include "robot.hpp"
 
 using pros::delay;
 
-// controller 
+// controller
 pros::Controller controller(pros::E_CONTROLLER_MASTER);
 
 // motor groups
@@ -88,6 +90,7 @@ lemlib::Chassis chassis(drivetrain,
                         &throttleCurve,
                         &lemlib::defaultDriveCurve // linear steering, no expo shaping
 );
+
 /**
  * Runs initialization code. This occurs as soon as the program is started.
  *
@@ -96,6 +99,7 @@ lemlib::Chassis chassis(drivetrain,
  */
 void initialize() {
     pros::lcd::initialize(); // initialize brain screen
+    pros::lcd::print(3, "Auton: %s", activeAutonName()); // confirm which auton is loaded
     chassis.calibrate(); // calibrate sensors
     // ClawMotors.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
     arm.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
@@ -134,48 +138,14 @@ void disabled() {}
  */
 void competition_initialize() {}
 
-// get a path used for pure pursuit
-// this needs to be put outside a function
-ASSET(path_txt); // '.' replaced with "_" to make c++ happy
+// auton1()-auton8() and the ACTIVE_AUTON program slot selection are defined
+// in autons.cpp — edit them there, no need to touch this file.
 
 /**
  * Runs during auto
- *
- * This is an example autonomous routine which demonstrates a lot of the features LemLib has to offer
  */
 void autonomous() {
-    // set position to x:0, y:0, heading:0
-    chassis.setPose(0, 0, 0);
-    liftMotors.move_voltage(2000);
-    delay(400);
-    liftMotors.brake();
-    arm.move_voltage(-2600);
-    roller.move_voltage(-1000);
-    delay(300);
-    arm.brake();
-    chassis.moveToPose(16.77, -14, 270, 2200, {.forwards = false, .maxSpeed = 90}); // move to pose x:14.77, y:-7.74, facing west (270)
-    chassis.moveToPoint(11, -14, 3000, {.maxSpeed = 80});
-    delay(700);
-    arm.move_voltage(3000);
-    delay(600);
-    arm.brake();
-    roller.move_voltage(2000);
-    arm.move_voltage(-1000);
-    delay(1400);
-    arm.brake();
-    intake.move_voltage(12000);
-    roller.move_voltage(12000);
-    chassis.moveToPose(-19.22, -30.5, -133.9, 4000, {.maxSpeed = 100});
-    arm.move_voltage(6000);
-    arm.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
-    pros::delay(250);
-    arm.brake();
-    // chassis.moveToPoint(-10.22, -28.25, 1400, {.forwards = false, .maxSpeed = 100});
-    // chassis.moveToPoint(-1.3, -39, 1800, {.maxSpeed = 100});
-    // chassis.moveToPose(5, -10, 0, 2000, {.maxSpeed = 90});
-    // chassis.moveToPose(-12.67, -15.69, 90, 2000, {.maxSpeed = 90});
-    
-
+    runAutonomous();
 }
 
 /**
@@ -202,9 +172,9 @@ void opcontrol() {
                 arm.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
                 pros::delay(250);
                 arm.brake();
-                }
+            }
             //otherwise stop intake and rollers
-             else {
+            else {
                 intake.move_voltage(0);
                 roller.move_voltage(0);
             }
@@ -228,7 +198,7 @@ void opcontrol() {
             //scoring by bringing objects down from the cascade
             if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_Y)){
                 roller.move_voltage(-7000);
-                liftMotors.move_voltage(1000);
+                liftMotors.move_voltage(3000);
                 arm.move_voltage(-2000);
                 arm.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
                 delay(257);
