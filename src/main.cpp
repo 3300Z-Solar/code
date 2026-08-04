@@ -146,8 +146,36 @@ ASSET(path_txt); // '.' replaced with "_" to make c++ happy
 void autonomous() {
     // set position to x:0, y:0, heading:0
     chassis.setPose(0, 0, 0);
-    // turn to face heading 90 with a very long timeout
-    chassis.moveToPoint(0, 48, 100000); // move to point x:24, y:0 with a very long timeout
+    liftMotors.move_voltage(2000);
+    delay(400);
+    liftMotors.brake();
+    arm.move_voltage(-2600);
+    roller.move_voltage(-1000);
+    delay(300);
+    arm.brake();
+    chassis.moveToPose(16.77, -14, 270, 2200, {.forwards = false, .maxSpeed = 90}); // move to pose x:14.77, y:-7.74, facing west (270)
+    chassis.moveToPoint(11, -14, 3000, {.maxSpeed = 80});
+    delay(700);
+    arm.move_voltage(3000);
+    delay(600);
+    arm.brake();
+    roller.move_voltage(2000);
+    arm.move_voltage(-1000);
+    delay(1400);
+    arm.brake();
+    intake.move_voltage(12000);
+    roller.move_voltage(12000);
+    chassis.moveToPose(-19.22, -30.5, -133.9, 4000, {.maxSpeed = 100});
+    arm.move_voltage(6000);
+    arm.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
+    pros::delay(250);
+    arm.brake();
+    // chassis.moveToPoint(-10.22, -28.25, 1400, {.forwards = false, .maxSpeed = 100});
+    // chassis.moveToPoint(-1.3, -39, 1800, {.maxSpeed = 100});
+    // chassis.moveToPose(5, -10, 0, 2000, {.maxSpeed = 90});
+    // chassis.moveToPose(-12.67, -15.69, 90, 2000, {.maxSpeed = 90});
+    
+
 }
 
 /**
@@ -164,11 +192,7 @@ void opcontrol() {
                 roller.move_voltage(12000);
                 arm.move_voltage(4000);
                 arm.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
-                uint32_t armPulseStart = pros::millis();
-                while (pros::millis() - armPulseStart < 257) {
-                    if (arm.get_current_draw() > ARM_CURRENT_LIMIT_MA) break;
-                    pros::delay(10);
-                }
+                pros::delay(250);
                 arm.brake();
             //outtaking first stage and rollers
             } else if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_L2)){
@@ -176,14 +200,11 @@ void opcontrol() {
                 roller.move_voltage(-12000);
                 arm.move_voltage(-4000);
                 arm.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
-                uint32_t armPulseStart = pros::millis();
-                while (pros::millis() - armPulseStart < 257) {
-                    if (arm.get_current_draw() > ARM_CURRENT_LIMIT_MA) break;
-                    pros::delay(10);
-                }
+                pros::delay(250);
                 arm.brake();
+                }
             //otherwise stop intake and rollers
-            } else {
+             else {
                 intake.move_voltage(0);
                 roller.move_voltage(0);
             }
@@ -194,27 +215,42 @@ void opcontrol() {
                 roller.move_voltage(9000);
                 arm.move_voltage(-10000);
                 arm.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
-                uint32_t armPulseStart = pros::millis();
-                while (pros::millis() - armPulseStart < 257) {
-                    if (arm.get_current_draw() > ARM_CURRENT_LIMIT_MA) break;
-                    pros::delay(10);
-                }
+                delay(257);
                 arm.brake();
             } else if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_R2)) {
                 liftMotors.move_voltage(-12000);
+            }
+            else {
+                liftMotors.move_voltage(0);
+                roller.move_voltage(500);
             }
 
             //scoring by bringing objects down from the cascade
             if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_Y)){
                 roller.move_voltage(-7000);
-                liftMotors.move_voltage(1500);
-                arm.move_voltage(4000);
+                liftMotors.move_voltage(1000);
+                arm.move_voltage(-2000);
                 arm.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
                 delay(257);
                 arm.brake();
                 arm.move_voltage(0);
                 liftMotors.move_voltage(0);
             }
+
+            if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_RIGHT)){
+            arm.move_voltage(-5000);
+            arm.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
+            pros::delay(343);
+            arm.brake();
+            }
+
+            if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_DOWN)){
+            arm.move_voltage(3000);
+            arm.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
+            pros::delay(147);
+            arm.brake();
+            }
+
             delay(10);
         }
     });
